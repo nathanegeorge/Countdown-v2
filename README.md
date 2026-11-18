@@ -22,6 +22,12 @@ xattr -dr com.apple.quarantine ~/Downloads/Countdown.saver
 
 If you're upgrading from 0.1.0, remove the old version from `~/Library/Screen Savers` first. Both versions use the same identifier, so they can't be installed together. If **Options…** doesn't open after upgrading, log out and back in.
 
+## What's new in 0.2.1
+
+- The countdown no longer jumps down a little when the screen saver starts with drift on.
+- With seconds hidden, minutes round up, so the last minute no longer reads 00 00 00 early.
+- Long titles stay fully on screen while drifting.
+
 ## What's new in 0.2.0
 
 - **Modern Swift.** Builds with the current toolchain as a universal binary that runs natively on Apple Silicon and Intel. Requires macOS 13 or later.
