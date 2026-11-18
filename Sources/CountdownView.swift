@@ -240,9 +240,11 @@ final class CountdownView: ScreenSaverView {
 	private func updateDrift() {
 		guard drift else { return }
 
+		// Both offsets are 0 when the screen saver starts, so the content begins exactly
+		// centered and eases away from there instead of jumping on the first frame.
 		let elapsed = Date().timeIntervalSince(startTime)
 		let x = sin(elapsed * 2 * .pi / 97) * bounds.width * 0.04
-		let y = sin(elapsed * 2 * .pi / 71 + 1) * bounds.height * 0.05
+		let y = sin(elapsed * 2 * .pi / 71) * bounds.height * 0.05
 		centerXConstraint?.constant = x
 		centerYConstraint?.constant = y
 	}
