@@ -42,7 +42,7 @@ final class PlaceView: NSView {
 
 	/// Sets the number, only touching the label when it actually changes.
 	func setValue(_ value: Int) {
-		let string = String(format: "%02d", value)
+		let string = String(format: "%02ld", value)
 		if textLabel.stringValue != string {
 			textLabel.stringValue = string
 		}

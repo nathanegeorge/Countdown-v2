@@ -38,7 +38,7 @@ If you're upgrading from 0.1.0, remove the old version from `~/Library/Screen Sa
   - Reaches 00 exactly at the chosen time.
   - Long titles and big numbers no longer get cut off.
 
-Your date from 0.1.0 carries over because the bundle ID and settings key are unchanged.
+On Apple Silicon Macs you'll need to set your date again after upgrading from 0.1.0. macOS keeps settings for Intel screen savers (0.1.0 was Intel-only) separate from native ones. On Intel Macs your date carries over.
 
 ## Building
 

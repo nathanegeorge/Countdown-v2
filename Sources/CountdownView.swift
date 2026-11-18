@@ -131,7 +131,8 @@ final class CountdownView: ScreenSaverView {
 		NSLayoutConstraint.activate([
 			centerX,
 			centerY,
-			contentView.widthAnchor.constraint(lessThanOrEqualTo: widthAnchor, multiplier: 0.95)
+			// Leaves room for the drift (up to 4% each way), so a long title never slides off screen.
+			contentView.widthAnchor.constraint(lessThanOrEqualTo: widthAnchor, multiplier: 0.9)
 		])
 		centerXConstraint = centerX
 		centerYConstraint = centerY
@@ -209,7 +210,16 @@ final class CountdownView: ScreenSaverView {
 		setMode(.counting)
 
 		// If the date has passed (and there is no finished message), count up from it.
-		let (start, end) = hasPassed ? (date, now) : (now, date)
+		var (start, end) = hasPassed ? (date, now) : (now, date)
+
+		// Without seconds, round a countdown up to the next whole minute. Otherwise the
+		// whole last minute would read 00 00 00, as if the countdown were already over.
+		if !showSeconds && !hasPassed {
+			let minutesLeft = ceil(date.timeIntervalSince(now) / 60)
+			start = date.addingTimeInterval(-minutesLeft * 60)
+			end = date
+		}
+
 		let components = Calendar.current.dateComponents([.day, .hour, .minute, .second], from: start, to: end)
 		daysView.setValue(abs(components.day ?? 0))
 		hoursView.setValue(abs(components.hour ?? 0))
