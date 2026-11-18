@@ -4,6 +4,24 @@ A macOS screen saver that counts down to any date. If the date has passed, it co
 
 This is a 2026 port of [soffes/Countdown](https://github.com/soffes/Countdown) 0.1.0. The original was written in Swift 2.2 in 2016 and no longer builds. It also ran only on Intel Macs.
 
+## Installation
+
+**[Download the latest release](https://github.com/nathanegeorge/Countdown-v2/releases/latest).** Unzip it and double-click `Countdown.saver`. Then pick **Countdown** in System Settings › Screen Saver and click **Options…** to set your date.
+
+The screen saver isn't signed with an Apple Developer ID, so the first time you open it macOS says it can't verify the developer. To install it anyway:
+
+1. Click **Done** on the warning. Don't move it to the Trash.
+2. Open System Settings › Privacy & Security, scroll down, and click **Open Anyway** next to the message about Countdown.
+3. Double-click `Countdown.saver` again.
+
+Or remove the download flag in Terminal, then double-click it again:
+
+```bash
+xattr -dr com.apple.quarantine ~/Downloads/Countdown.saver
+```
+
+If you're upgrading from 0.1.0, remove the old version from `~/Library/Screen Savers` first. Both versions use the same identifier, so they can't be installed together. If **Options…** doesn't open after upgrading, log out and back in.
+
 ## What's new in 0.2.0
 
 - **Modern Swift.** Builds with the current toolchain as a universal binary that runs natively on Apple Silicon and Intel. Requires macOS 13 or later.
