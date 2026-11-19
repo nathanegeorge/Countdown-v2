@@ -22,6 +22,10 @@ xattr -dr com.apple.quarantine ~/Downloads/Countdown.saver
 
 If you're upgrading from 0.1.0, remove the old version from `~/Library/Screen Savers` first. Both versions use the same identifier, so they can't be installed together. If **Options…** doesn't open after upgrading, log out and back in.
 
+## What's new in 0.2.2
+
+- Countdowns of 1,000 days or more no longer cut off the seconds. The numbers shrink just enough to fit the screen.
+
 ## What's new in 0.2.1
 
 - The countdown no longer jumps down a little when the screen saver starts with drift on.
