@@ -64,6 +64,10 @@ final class CountdownView: ScreenSaverView {
 	private var mode: Mode?
 	private let startTime = Date()
 
+	/// How many digits the day count has. When it changes (999 → 1000), the numbers
+	/// are re-measured so they still fit on screen.
+	private var dayDigits = 0
+
 
 	// MARK: - Initializers
 
@@ -177,6 +181,7 @@ final class CountdownView: ScreenSaverView {
 		}
 
 		mode = nil
+		dayDigits = 0
 		updateContent()
 		needsDisplay = true
 	}
@@ -221,10 +226,17 @@ final class CountdownView: ScreenSaverView {
 		}
 
 		let components = Calendar.current.dateComponents([.day, .hour, .minute, .second], from: start, to: end)
-		daysView.setValue(abs(components.day ?? 0))
+		let days = abs(components.day ?? 0)
+		daysView.setValue(days)
 		hoursView.setValue(abs(components.hour ?? 0))
 		minutesView.setValue(abs(components.minute ?? 0))
 		secondsView.setValue(abs(components.second ?? 0))
+
+		let digits = max(2, String(days).count)
+		if digits != dayDigits {
+			dayDigits = digits
+			updateFonts()
+		}
 	}
 
 	private func setMode(_ newMode: Mode) {
@@ -266,19 +278,31 @@ final class CountdownView: ScreenSaverView {
 
 		// With seconds hidden there are only three columns, so they can be bigger.
 		let numberSize = round(width / (showSeconds ? 8 : 6.5))
-		let numberFont = NSFont.monospacedDigitSystemFont(ofSize: max(4, numberSize), weight: .ultraLight)
-		let unitFont = NSFont.systemFont(ofSize: max(4, floor(width / 38)), weight: .thin)
+		applyPlaceSizes(number: numberSize, unit: floor(width / 38), spacing: floor(width * 0.05))
 
-		for place in placeViews {
-			place.textLabel.font = numberFont
-			place.detailTextLabel.font = unitFont
+		// A long day count (1000+ days) makes the row wider. If it no longer fits in the
+		// space left after drifting, shrink the whole row by just enough to fit.
+		let maxRowWidth = width * 0.9
+		let rowWidth = placesView.fittingSize.width
+		if rowWidth > maxRowWidth {
+			let scale = maxRowWidth / rowWidth
+			applyPlaceSizes(number: floor(numberSize * scale), unit: floor(width / 38 * scale), spacing: floor(width * 0.05 * scale))
 		}
 
-		placesView.spacing = floor(width * 0.05)
 		contentView.spacing = floor(width * 0.02)
 		titleLabel.font = NSFont.systemFont(ofSize: max(4, floor(width / 22)), weight: .light)
 
 		let messageSize = mode == .finished ? width / 14 : width / 30
 		messageLabel.font = NSFont.systemFont(ofSize: max(4, floor(messageSize)), weight: mode == .finished ? .ultraLight : .thin)
+	}
+
+	private func applyPlaceSizes(number: CGFloat, unit: CGFloat, spacing: CGFloat) {
+		let numberFont = NSFont.monospacedDigitSystemFont(ofSize: max(4, number), weight: .ultraLight)
+		let unitFont = NSFont.systemFont(ofSize: max(4, unit), weight: .thin)
+		for place in placeViews {
+			place.textLabel.font = numberFont
+			place.detailTextLabel.font = unitFont
+		}
+		placesView.spacing = spacing
 	}
 }
