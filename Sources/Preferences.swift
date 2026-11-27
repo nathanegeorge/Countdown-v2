@@ -40,7 +40,9 @@ final class Preferences {
 	}
 
 	var date: Date? {
-		get { (defaults.object(forKey: Key.date) as? Double).map(Date.init(timeIntervalSince1970:)) }
+		// Whole seconds only. The date picker keeps fractions of a second, which would hold
+		// 00 on screen for an extra second after the chosen time.
+		get { (defaults.object(forKey: Key.date) as? Double).map { Date(timeIntervalSince1970: floor($0)) } }
 		set {
 			if let newValue {
 				defaults.set(newValue.timeIntervalSince1970, forKey: Key.date)

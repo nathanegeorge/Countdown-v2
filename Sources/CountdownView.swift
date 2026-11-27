@@ -44,6 +44,11 @@ final class CountdownView: ScreenSaverView {
 	private var centerXConstraint: NSLayoutConstraint?
 	private var centerYConstraint: NSLayoutConstraint?
 
+	/// Widest the title and message may be, in points; longer text ends in "…". Set from the
+	/// screen width in `updateFonts`. A fixed number rather than a share of this view's width,
+	/// because Auto Layout would satisfy a share by making the view itself wider.
+	private lazy var textWidthCaps = [titleLabel, messageLabel].map { $0.widthAnchor.constraint(lessThanOrEqualToConstant: 10_000) }
+
 	private lazy var configurationWindowController = ConfigurationWindowController()
 
 
@@ -59,10 +64,16 @@ final class CountdownView: ScreenSaverView {
 	private var date: Date?
 	private var finishedMessage = ""
 	private var showSeconds = true
-	private var drift = true
+	private var drift = false
 	private var backgroundColor: NSColor = .black
 	private var mode: Mode?
-	private let startTime = Date()
+
+	/// When drifting started. Reset each time drift turns on, so it eases out from the center.
+	private var driftStart = Date()
+
+	/// The widest any line of text may be, as a share of the screen width. The rest is room
+	/// for the drift (up to 4% each way).
+	private let maxTextWidthFraction: CGFloat = 0.9
 
 	/// How many digits the day count has. When it changes (999 → 1000), the numbers
 	/// are re-measured so they still fit on screen.
@@ -120,10 +131,6 @@ final class CountdownView: ScreenSaverView {
 	// MARK: - Setup
 
 	private func initialize() {
-		// Show the full title and message unless they are wider than the screen.
-		titleLabel.setContentCompressionResistancePriority(.defaultHigh + 1, for: .horizontal)
-		messageLabel.setContentCompressionResistancePriority(.defaultHigh + 1, for: .horizontal)
-
 		placeViews.forEach(placesView.addArrangedSubview)
 		contentView.addArrangedSubview(titleLabel)
 		contentView.addArrangedSubview(placesView)
@@ -132,12 +139,7 @@ final class CountdownView: ScreenSaverView {
 
 		let centerX = contentView.centerXAnchor.constraint(equalTo: centerXAnchor)
 		let centerY = contentView.centerYAnchor.constraint(equalTo: centerYAnchor)
-		NSLayoutConstraint.activate([
-			centerX,
-			centerY,
-			// Leaves room for the drift (up to 4% each way), so a long title never slides off screen.
-			contentView.widthAnchor.constraint(lessThanOrEqualTo: widthAnchor, multiplier: 0.9)
-		])
+		NSLayoutConstraint.activate([centerX, centerY] + textWidthCaps)
 		centerXConstraint = centerX
 		centerYConstraint = centerY
 
@@ -158,6 +160,9 @@ final class CountdownView: ScreenSaverView {
 		date = preferences.date
 		finishedMessage = preferences.finishedMessage.trimmingCharacters(in: .whitespacesAndNewlines)
 		showSeconds = preferences.showSeconds
+		if preferences.drift && !drift {
+			driftStart = Date()
+		}
 		drift = preferences.drift
 		backgroundColor = NSColor(hex: preferences.backgroundColorHex)
 
@@ -262,19 +267,24 @@ final class CountdownView: ScreenSaverView {
 	private func updateDrift() {
 		guard drift else { return }
 
-		// Both offsets are 0 when the screen saver starts, so the content begins exactly
-		// centered and eases away from there instead of jumping on the first frame.
-		let elapsed = Date().timeIntervalSince(startTime)
+		// Both offsets are 0 when drifting starts, so the content begins exactly centered
+		// and eases away from there instead of jumping.
+		let elapsed = Date().timeIntervalSince(driftStart)
 		let x = sin(elapsed * 2 * .pi / 97) * bounds.width * 0.04
 		let y = sin(elapsed * 2 * .pi / 71) * bounds.height * 0.05
 		centerXConstraint?.constant = x
 		centerYConstraint?.constant = y
 	}
 
-	/// Sizes all text relative to the screen width.
+	/// Sizes all text relative to the screen.
 	private func updateFonts() {
-		let width = bounds.width
-		guard width > 0 else { return }
+		guard bounds.width > 0, bounds.height > 0 else { return }
+
+		// Sizes follow the screen width, except on very wide screens (wider than 2:1, such
+		// as 32:9 ultra-wides), where width-based text would be taller than the screen.
+		let width = min(bounds.width, bounds.height * 2)
+		let maxTextWidth = bounds.width * maxTextWidthFraction
+		textWidthCaps.forEach { $0.constant = maxTextWidth }
 
 		// With seconds hidden there are only three columns, so they can be bigger.
 		let numberSize = round(width / (showSeconds ? 8 : 6.5))
@@ -282,18 +292,32 @@ final class CountdownView: ScreenSaverView {
 
 		// A long day count (1000+ days) makes the row wider. If it no longer fits in the
 		// space left after drifting, shrink the whole row by just enough to fit.
-		let maxRowWidth = width * 0.9
 		let rowWidth = placesView.fittingSize.width
-		if rowWidth > maxRowWidth {
-			let scale = maxRowWidth / rowWidth
+		if rowWidth > maxTextWidth {
+			let scale = maxTextWidth / rowWidth
 			applyPlaceSizes(number: floor(numberSize * scale), unit: floor(width / 38 * scale), spacing: floor(width * 0.05 * scale))
 		}
 
 		contentView.spacing = floor(width * 0.02)
-		titleLabel.font = NSFont.systemFont(ofSize: max(4, floor(width / 22)), weight: .light)
+		titleLabel.font = fittingFont(for: titleLabel, size: width / 22, weight: .light, maxWidth: maxTextWidth)
 
-		let messageSize = mode == .finished ? width / 14 : width / 30
-		messageLabel.font = NSFont.systemFont(ofSize: max(4, floor(messageSize)), weight: mode == .finished ? .ultraLight : .thin)
+		let isFinished = mode == .finished
+		messageLabel.font = fittingFont(for: messageLabel, size: width / (isFinished ? 14 : 30), weight: isFinished ? .ultraLight : .thin, maxWidth: maxTextWidth)
+	}
+
+	/// The system font at `size`, shrunk (down to half) so the label's text fits in
+	/// `maxWidth`. Text still too long after that is cut off with "…".
+	private func fittingFont(for label: Label, size: CGFloat, weight: NSFont.Weight, maxWidth: CGFloat) -> NSFont {
+		var pointSize = max(4, floor(size))
+		let smallest = max(4, floor(size / 2))
+		while true {
+			let font = NSFont.systemFont(ofSize: pointSize, weight: weight)
+			label.font = font
+			if label.intrinsicContentSize.width <= maxWidth || pointSize <= smallest {
+				return font
+			}
+			pointSize = max(smallest, floor(pointSize * 0.95))
+		}
 	}
 
 	private func applyPlaceSizes(number: CGFloat, unit: CGFloat, spacing: CGFloat) {

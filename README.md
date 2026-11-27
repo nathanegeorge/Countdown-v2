@@ -56,7 +56,10 @@ On Apple Silicon Macs you'll need to set your date again after upgrading from 0.
 ./build.sh            # build/Countdown.saver
 ./build.sh install    # build, then install into ~/Library/Screen Savers
 ./build.sh snapshot   # also render sample screenshots into build/snapshots
+./build.sh check      # also run layout and timing checks; exits 1 if any fail
 ```
+
+Run `./build.sh check` after changing the layout. It renders the screen saver at several screen sizes, with long titles, long messages and large day counts. It fails if any text is cut off or off screen.
 
 The snapshot tool renders several states and the options sheet to PNG files. It lets you check a design change without installing. It uses its own settings, never your real ones.
 

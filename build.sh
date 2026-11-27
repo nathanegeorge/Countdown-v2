@@ -10,6 +10,14 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+case "${1:-}" in
+"" | install | snapshot | check) ;;
+*)
+	echo "Unknown option: $1. Use install, snapshot or check, or nothing to just build." >&2
+	exit 1
+	;;
+esac
+
 BUILD=build
 SAVER="$BUILD/Countdown.saver"
 MIN_MACOS=13.0
@@ -37,6 +45,7 @@ echo "Built $SAVER"
 case "${1:-}" in
 install)
 	DEST="$HOME/Library/Screen Savers/Countdown.saver"
+	mkdir -p "$(dirname "$DEST")"
 	rm -rf "$DEST"
 	cp -R "$SAVER" "$DEST"
 	# Make System Settings and the screen saver host load the new version.
