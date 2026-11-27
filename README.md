@@ -22,6 +22,13 @@ xattr -dr com.apple.quarantine ~/Downloads/Countdown.saver
 
 If you're upgrading from 0.1.0, remove the old version from `~/Library/Screen Savers` first. Both versions use the same identifier, so they can't be installed together. If **Options…** doesn't open after upgrading, log out and back in.
 
+## What's new in 0.2.3
+
+- Long titles and finished messages shrink to fit the screen, and very long ones end in "…". Before, they could run off the edge, and could crash the screen saver.
+- On 32:9 ultra-wide displays, the countdown no longer runs past the top and bottom of the screen.
+- Turning on drift in Options no longer makes the preview jump.
+- The finished message now appears at the exact second you picked, not one second later.
+
 ## What's new in 0.2.2
 
 - Countdowns of 1,000 days or more no longer cut off the seconds. The numbers shrink just enough to fit the screen.
