@@ -63,6 +63,7 @@ checkLayout("1,501 days") { $0.date = Date().addingTimeInterval(1_501 * 86_400) 
 checkLayout("99,999 days, no seconds") { $0.date = Date().addingTimeInterval(99_999 * 86_400); $0.showSeconds = false }
 checkLayout("long title") { $0.title = "Until the big family reunion up in the mountains next summer" }
 checkLayout("long finished message") { $0.date = Date().addingTimeInterval(-60); $0.title = "Launch"; $0.finishedMessage = longText }
+checkLayout("very long finished message") { $0.date = Date().addingTimeInterval(-60); $0.finishedMessage = String(repeating: longText + " ", count: 4) }
 checkLayout("32:9 ultra-wide, no seconds, title", width: 5_120, height: 1_440) { $0.showSeconds = false; $0.title = "Launch" }
 checkLayout("System Settings thumbnail", width: 296, height: 168) { $0.title = "Launch" }
 
@@ -77,6 +78,17 @@ do {
 	let x = (child(view, "centerXConstraint") as NSLayoutConstraint?)?.constant ?? 0
 	let y = (child(view, "centerYConstraint") as NSLayoutConstraint?)?.constant ?? 0
 	expect(abs(x) < 2 && abs(y) < 2, "drift turned on while running", "first offset x \(Int(x)), y \(Int(y))")
+}
+
+// A date saved with a fraction of a second (the date picker keeps them) that has just
+// passed should show the finished message, not one more second of 00 00 00 00.
+do {
+	while Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1) < 0.6 { Thread.sleep(forTimeInterval: 0.02) }
+	let justPassed = Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970) + 0.3)
+	let view = makeView(width: 1440, height: 900) { $0.date = justPassed; $0.finishedMessage = "Done!" }
+	let message: Label = child(view, "messageLabel")
+	let showsMessage = !message.isHidden && message.stringValue == "Done!"
+	expect(showsMessage, "date with a fraction of a second, just passed", showsMessage ? "shows the message" : "still counting")
 }
 
 // Leave the check tool's own settings empty again.
