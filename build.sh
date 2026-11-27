@@ -5,6 +5,7 @@
 #   ./build.sh            build into build/Countdown.saver
 #   ./build.sh install    build, then install into ~/Library/Screen Savers
 #   ./build.sh snapshot   build a tool that renders sample screenshots into build/snapshots
+#   ./build.sh check      build, then run layout and timing checks (exits 1 on failure)
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -47,5 +48,10 @@ snapshot)
 		Sources/*.swift Tools/main.swift -o "$BUILD/snapshot"
 	mkdir -p "$BUILD/snapshots"
 	"$BUILD/snapshot" "$BUILD/snapshots"
+	;;
+check)
+	swiftc -swift-version 5 -module-name Countdown -framework ScreenSaver -framework AppKit \
+		Sources/*.swift Tools/Check/main.swift -o "$BUILD/check"
+	"$BUILD/check"
 	;;
 esac
